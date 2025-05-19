@@ -29,7 +29,7 @@ if [ -n "$NGROK_AUTH_TOKEN" ]; then
   echo "Starting ngrok tunnel on port 2020..."
   ngrok http --url=piglet-factual-mentally.ngrok-free.app 2020 > /dev/null &
   sleep 2
-  NGROK_URL=$(curl --silent http://localhost:4040/api/tunnels \
+  NGROK_URL=$(curl --silent http://localhost:5050/api/tunnels \
     | grep -o 'https://[a-zA-Z0-9.-]*\.ngrok-free\.app' | head -n1)
 fi
 
