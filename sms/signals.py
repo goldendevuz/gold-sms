@@ -28,7 +28,7 @@ def create_user_profile(sender, instance, created, **kwargs):
 def save_api_token_backup(sender, instance, created, **kwargs):
     if created:
         data = {
-            "user_id": instance.user_id,
+            "user_id": str(instance.user_id),
             "username": instance.user.username,
             "api_token": instance.get_raw_token() or "N/A",
             "api_token_hash": instance.api_token_hash,
@@ -43,4 +43,4 @@ def save_api_token_backup(sender, instance, created, **kwargs):
 
         # Save JSON file
         with open(filepath, 'w') as f:
-            json.dump(data, f, indent=2)
+            json.dump(data, f, indent=4)

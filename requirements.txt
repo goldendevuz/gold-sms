@@ -16,3 +16,4 @@ django-extensions
 django-import-export[all]
 environs
 requests
+psycopg2-binary
