@@ -1,5 +1,7 @@
 
+import hashlib
 import re
+import secrets
 from urllib.parse import urlparse
 
 from django.contrib.auth.models import AbstractUser
@@ -10,7 +12,39 @@ from django.core.exceptions import ValidationError
 
 
 class User(AbstractUser):
+    pass
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     sms_balance = models.PositiveIntegerField(default=1)
+    api_token_hash = models.CharField(max_length=64, unique=True)  # Store only hashed token
+
+    # Temporarily store raw token before saving, not saved in DB
+    _raw_api_token = None
+
+    def __str__(self):
+        return f"{self.user.username} Profile"
+
+    def save(self, *args, **kwargs):
+        if not self.api_token_hash:
+            raw_token = self.generate_api_token()
+            self._raw_api_token = raw_token  # Keep unhashed token for immediate use (e.g. display or backup)
+            self.api_token_hash = self.hash_token(raw_token)
+        super().save(*args, **kwargs)
+
+    @staticmethod
+    def generate_api_token():
+        # Generate a secure 50-character token (URL safe)
+        return secrets.token_urlsafe(42)[:50]
+
+    @staticmethod
+    def hash_token(token):
+        # Hash token using SHA256 hex digest
+        return hashlib.sha256(token.encode()).hexdigest()
+
+    def get_raw_token(self):
+        # Return unhashed raw token only if freshly generated
+        return getattr(self, "_raw_api_token", None)
 
 
 phone_regex = RegexValidator(
@@ -47,7 +81,7 @@ class SendHistory(TimeStampedModel):
         validators=[phone_regex]
     )
     text = models.TextField(
-        max_length=155,
+        max_length=160,
         validators=[
             MinLengthValidator(4),
             RegexValidator(r'^[\x00-\x7F]*$', 'Only ASCII characters are allowed'),
@@ -59,8 +93,18 @@ class SendHistory(TimeStampedModel):
 class SMSTariff(TimeStampedModel):
     name = models.CharField(max_length=50)
     sms_count = models.PositiveIntegerField()
-    price = models.PositiveIntegerField(help_text="Narx (so‘mda)")
-    price_per_sms = models.FloatField()
+    price = models.PositiveIntegerField(help_text="Narx (so'mda)")
+    price_per_sms = models.FloatField(blank=True, editable=False)
+
+    def save(self, *args, **kwargs):
+        # Prevent division by zero
+        if self.sms_count > 0:
+            self.price_per_sms = round(self.price / self.sms_count, 2)
+        else:
+            self.price_per_sms = 0.0
+
+        super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.name} - {self.sms_count} ta - {self.price} so‘m ({self.price_per_sms} so‘m/SMS)"
+        return f"{self.name} - {self.sms_count} ta - {self.price} so'm ({self.price_per_sms} so'm/SMS)"
+

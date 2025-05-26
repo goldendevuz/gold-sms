@@ -1,6 +1,10 @@
 from rest_framework import generics, status
 from rest_framework.response import Response
 from django.db import transaction
+from rest_framework.authentication import SessionAuthentication
+
+
+from sms.authentication import SuperUserOrAPIKeyAuthentication
 from sms.models import SendHistory
 from sms.permissions import IsAdminOrAuthenticated
 from sms.serializers import SendSmsSerializer
@@ -9,7 +13,8 @@ from sms.services.sms import SmsService
 
 class SmsAPIView(generics.ListCreateAPIView):
     serializer_class = SendSmsSerializer
-    permission_classes = (IsAdminOrAuthenticated,)
+    authentication_classes = [SessionAuthentication, SuperUserOrAPIKeyAuthentication]
+    permission_classes = [IsAdminOrAuthenticated]
 
     def create(self, request, *args, **kwargs):
         # 1. Validate incoming data
@@ -17,7 +22,7 @@ class SmsAPIView(generics.ListCreateAPIView):
         
         if serializer.is_valid():
             # 2. Balance check
-            if request.user.sms_balance <= 0:
+            if request.user.profile.sms_balance <= 0:
                 return Response({
                     "success": False,
                     "message": "Insufficient balance to send the SMS.",
