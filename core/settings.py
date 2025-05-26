@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     'drf_material',
     'rest_framework',
     'corsheaders',
+    'import_export',
     'sms',
 ]
 
