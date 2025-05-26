@@ -1,6 +1,9 @@
 from django.contrib import admin
 from django.contrib.auth import get_user_model
 from django.contrib.auth.admin import UserAdmin
+from django.contrib import messages
+from import_export import resources
+from import_export.admin import ImportExportModelAdmin
 
 from sms.models import SendHistory, SMSTariff, UserProfile
 
@@ -13,8 +16,21 @@ class BaseAdmin(admin.ModelAdmin):
     class Meta:
         abstract = True
 
+class UserResource(resources.ModelResource):
+    class Meta:
+        model = User
 
-from django.contrib import messages
+class UserProfileResource(resources.ModelResource):
+    class Meta:
+        model = UserProfile
+
+class SMSTariffResource(resources.ModelResource):
+    class Meta:
+        model = SMSTariff
+
+class SendHistoryResource(resources.ModelResource):
+    class Meta:
+        model = SendHistory
 
 @admin.action(description='SMS balansni oshirish')
 def add_sms_balance(modeladmin, request, queryset):
@@ -30,7 +46,8 @@ def add_sms_balance(modeladmin, request, queryset):
     if no_profile_users:
         messages.warning(request, f"Following users have no profile and were skipped: {', '.join(no_profile_users)}")
 
-class UserAdmin(UserAdmin):
+class UserAdmin(UserAdmin, ImportExportModelAdmin, BaseAdmin):
+    resource_classes = [UserResource]
     list_display = [f.name for f in User._meta.fields if
                     f.name not in ('password', 'groups', 'user_permissions', 'is_staff', 'is_superuser')]
     actions = [add_sms_balance]
@@ -42,7 +59,8 @@ class UserAdmin(UserAdmin):
 
 
 @admin.register(SendHistory)
-class SendHistoryAdmin(BaseAdmin):
+class SendHistoryAdmin(ImportExportModelAdmin, BaseAdmin):
+    resource_classes = [SendHistoryResource]
     list_display = [f.name for f in SendHistory._meta.fields] + ['text_length', 'user_balance']
 
     def user_balance(self, obj):
@@ -61,7 +79,8 @@ class SendHistoryAdmin(BaseAdmin):
 
 
 @admin.register(SMSTariff)
-class SMSTariffAdmin(BaseAdmin):
+class SMSTariffAdmin(ImportExportModelAdmin, BaseAdmin):
+    resource_classes = [SMSTariffResource]
     list_display = [f.name for f in SMSTariff._meta.fields]
     ordering = ('price_per_sms',)
 
@@ -71,7 +90,8 @@ class SMSTariffAdmin(BaseAdmin):
 
 
 @admin.register(UserProfile)
-class UserProfileAdmin(BaseAdmin):
+class UserProfileAdmin(ImportExportModelAdmin, BaseAdmin):
+    resource_classes = [UserProfileResource]
     list_display = [f.name for f in UserProfile._meta.fields]
 
 admin.site.register(User, UserAdmin)
