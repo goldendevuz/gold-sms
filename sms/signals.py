@@ -9,16 +9,6 @@ from sms.models import SendHistory, UserProfile
 
 User = get_user_model()
 
-@receiver(post_save, sender=SendHistory)
-def update_user_balance(sender, instance, created, **kwargs):
-    if created:
-        user = instance.user
-        if hasattr(user, 'profile'):
-            profile = user.profile
-            if profile.sms_balance > 0:
-                profile.sms_balance -= 1
-                profile.save()
-
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:

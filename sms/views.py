@@ -34,11 +34,16 @@ class SmsAPIView(generics.ListCreateAPIView):
             try:
                 with transaction.atomic():
                     response_data = SmsService.send_sms(number, text)
-                    SendHistory.objects.create(  # noqa
+                    SendHistory.objects.create(
                         user=request.user,
                         number=number,
                         text=text
                     )
+                    # Deduct balance
+                    profile = request.user.profile
+                    profile.sms_balance -= 1
+                    profile.save()
+                    
             except Exception as e:
                 transaction.set_rollback(True)
                 return Response({
