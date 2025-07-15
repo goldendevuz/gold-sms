@@ -1,7 +1,8 @@
 from datetime import timedelta
 from pathlib import Path
+from decouple import config
 from config import ALLOWED_HOSTS, SECRET_KEY, DEBUG, CSRF_TRUSTED_ORIGINS, CORS_ALLOWED_ORIGINS, EMAIL_HOST_USER, \
-    EMAIL_HOST_PASSWORD
+    EMAIL_HOST_PASSWORD, POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD, DB_HOST, DB_PORT
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -32,6 +33,7 @@ INSTALLED_APPS = [
     'drf_material',
     'rest_framework',
     'corsheaders',
+    'import_export',
     'sms',
 ]
 
@@ -74,8 +76,22 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
-    }
+        'TEST': {
+            'NAME': 'test_db',  # 👈 This makes Django use 'test_db' for tests
+        },
+    },
 }
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': config('POSTGRES_DB'),
+#         'USER': config('POSTGRES_USER'),
+#         'PASSWORD': config('POSTGRES_PASSWORD'),
+#         'HOST': config('DB_HOST', default='localhost'),
+#         'PORT': config('DB_PORT', default='5432'),
+#     }
+# }
 
 
 # Password validation
